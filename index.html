@@ -42,8 +42,39 @@
             display: flex;
             gap: 15px;
             justify-content: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            color: #667eea;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
         }
 
         button {
@@ -187,6 +218,11 @@
             <strong>Current Scale:</strong> <span id="currentScale">Random Major Scale - Frets 5-10</span>
         </div>
 
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode(3)" id="mode3">3 Notes</button>
+            <button class="mode-btn" onclick="setMode(2)" id="mode2">2 Notes</button>
+        </div>
+
         <div class="controls">
             <button class="generate-btn" onclick="generateNotes()">Generate</button>
             <button class="play-btn" onclick="playNotes()" id="playBtn">Play</button>
@@ -224,6 +260,7 @@
         let isPlaying = false;
         let playInterval;
         let audioContext;
+        let noteMode = 3; // Default to 3 notes mode
 
         // Initialize audio context
         function initAudio() {
@@ -285,7 +322,29 @@
             return positions;
         }
 
-        // Generate 3 random notes from a random major scale
+        // Set note mode (2 or 3 notes)
+        function setMode(mode) {
+            noteMode = mode;
+            
+            // Update button styles
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`mode${mode}`).classList.add('active');
+            
+            // Stop current playback if running
+            if (isPlaying) {
+                stopPlaying();
+            }
+            
+            // Clear current notes
+            currentNotes = [];
+            displayNotes();
+            
+            updateStatus(`Mode changed to ${mode} notes. Generate new notes!`);
+        }
+
+        // Generate random notes from a random major scale
         function generateNotes() {
             // Choose a random root note
             const rootNote = CHROMATIC_NOTES[Math.floor(Math.random() * CHROMATIC_NOTES.length)];
@@ -296,7 +355,7 @@
             });
 
             // Update scale display
-            document.getElementById('currentScale').textContent = `${rootNote} Major - Frets 5-10`;
+            document.getElementById('currentScale').textContent = `${rootNote} Major - Frets 5-10 (${noteMode} Notes)`;
 
             // Generate notes that can be played between frets 5-10
             const validNotes = [];
@@ -315,11 +374,11 @@
                 }
             });
 
-            // Select 3 random notes from valid notes
+            // Select notes based on current mode (2 or 3 notes)
             const selectedNotes = [];
             const usedIndices = new Set();
             
-            while (selectedNotes.length < 3 && selectedNotes.length < validNotes.length) {
+            while (selectedNotes.length < noteMode && selectedNotes.length < validNotes.length) {
                 const randomIndex = Math.floor(Math.random() * validNotes.length);
                 if (!usedIndices.has(randomIndex)) {
                     selectedNotes.push(validNotes[randomIndex]);
@@ -329,7 +388,7 @@
 
             currentNotes = selectedNotes;
             displayNotes();
-            updateStatus('Notes generated! Click "Play" to hear them.');
+            updateStatus(`${noteMode} notes generated! Click "Play" to hear them.`);
         }
 
         // Calculate interval between two scale positions
@@ -396,7 +455,7 @@
                 if (!isPlaying) return;
                 
                 if (noteIndex >= currentNotes.length) {
-                    // All 3 notes played, wait 2 seconds before restarting
+                    // All notes played, wait 2 seconds before restarting
                     noteIndex = 0;
                     // Clear highlighting
                     document.querySelectorAll('.note-info').forEach(el => {
@@ -404,7 +463,7 @@
                     });
                     
                     if (isPlaying) {
-                        playInterval = setTimeout(playNextNote, 2000); // 2 second pause after all 3 notes
+                        playInterval = setTimeout(playNextNote, 2000); // 2 second pause after all notes
                     }
                     return;
                 }
